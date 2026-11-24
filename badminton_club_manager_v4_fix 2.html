@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>羽球團管理系統</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#17212f;--muted:#6b7280;--line:#e5e9ef;--green:#16865b;--greenbg:#e8f6ef;--blue:#2563eb;--red:#c24141;--amber:#a16207}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#173d35;color:#fff;padding:20px 18px 17px}header .top{max-width:900px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:20px;margin:0}header p{margin:5px 0 0;color:#c8ddd5;font-size:13px}
+main{max-width:900px;margin:18px auto 90px;padding:0 14px}.tabs{display:flex;gap:7px;overflow:auto;margin:0 0 14px}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 14px;white-space:nowrap;color:#475569;font-weight:600}.tab.active{background:#173d35;color:white;border-color:#173d35}
+.page{display:none}.page.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:13px;box-shadow:0 2px 8px #15223808}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.muted{color:var(--muted);font-size:13px}.big{font-size:28px;font-weight:800;letter-spacing:-.5px}.green{color:var(--green)}.red{color:var(--red)}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric{background:#f7f9fb;border-radius:12px;padding:13px}.metric .big{font-size:23px;margin-top:5px}
+button,input,select{font:inherit}button{cursor:pointer}.primary{background:#176b50;color:white;border:0;border-radius:10px;padding:11px 14px;font-weight:700}.secondary{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 13px;color:#334155;font-weight:600}.danger{color:var(--red);border-color:#f0cccc}
+input,select{border:1px solid #d8dee7;border-radius:9px;padding:10px;background:#fff;color:var(--ink);max-width:100%}input[type=number]{width:120px}
+.players{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.player{border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px 5px;text-align:center;min-height:104px}.player .avatar{font-size:27px;display:block;margin-bottom:5px}.player strong{font-size:13px;display:block;overflow-wrap:anywhere}.player small{display:inline-block;margin-top:6px;color:var(--muted);font-size:11px}.player.selected{border:2px solid var(--green);background:var(--greenbg);padding:11px 4px}.player.selected small{color:var(--green);font-weight:700}
+.section-title{font-weight:800;margin:0 0 12px}.field{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.listrow{padding:11px 0;border-bottom:1px solid var(--line)}.listrow:last-child{border:0}.pill{border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700;background:#f1f5f9;color:#475569}.pill.ok{background:var(--greenbg);color:var(--green)}.pill.wait{background:#fff4df;color:var(--amber)}
+.notice{font-size:12px;line-height:1.6;color:var(--muted);background:#f7f9fb;padding:11px;border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+footer{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;border-top:1px solid var(--line);padding:9px 14px;text-align:center;color:var(--muted);font-size:11px}
+@media(min-width:650px){.players{grid-template-columns:repeat(5,minmax(0,1fr))}.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.metric .big{font-size:25px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div><h1>🏸 羽球團管理系統</h1><p>出席登記・場地費・收款紀錄</p></div><span style="font-size:12px;color:#d5e8df">第四版試用</span></div></header>
+<main>
+<nav class="tabs">
+<button class="tab active" data-page="home">總覽</button><button class="tab" data-page="accounts" onclick="showPage('accounts')">個人帳務</button><button class="tab" data-page="attendance">出席登記</button><button class="tab" data-page="payment">繳費管理</button><button class="tab" data-page="history">歷史紀錄</button><button class="tab" data-page="settings">設定</button>
+</nav>
+<section id="home" class="page active">
+<div class="card">
+<div class="row"><div><div class="muted">目前選擇場次</div><h2 id="homeDate" style="margin:5px 0 0">—</h2><div class="muted" id="homeVenue">固定場地</div></div><button class="secondary" onclick="showPage('attendance')">登記出席</button></div>
+</div>
+<div class="card"><div class="row"><div><h3 class="section-title">個人出席與帳務</h3><p class="muted">查看每位球員的參加日期、已繳及尚欠金額。</p></div><button class="primary" onclick="showPage('accounts')">查看個人帳務</button></div></div>
+<div class="card"><h3 class="section-title">球團公告</h3><div id="announcementContent" style="white-space:pre-wrap">尚無公告</div></div>
+<div class="metrics">
+<div class="metric"><div class="muted">本週場地費</div><div class="big" id="homeFee">—</div></div>
+<div class="metric"><div class="muted">參加人數</div><div class="big" id="homeCount">—</div></div>
+<div class="metric"><div class="muted">每人應繳</div><div class="big" id="homeShare">—</div></div>
+<div class="metric"><div class="muted">本週已收款</div><div class="big green" id="homePaid">—</div></div>
+</div>
+<div class="card"><div class="row"><h3 class="section-title">球團累積帳務</h3><span class="pill">所有場次</span></div><div class="metrics">
+<div class="metric"><div class="muted">累積場地費</div><div class="big" id="totalFees">—</div></div>
+<div class="metric"><div class="muted">累積已收款</div><div class="big green" id="totalPaid">—</div></div>
+<div class="metric"><div class="muted">尚未收款總額</div><div class="big red" id="totalDue">—</div></div>
+<div class="metric"><div class="muted">累積場次</div><div class="big" id="totalSessions">—</div></div>
+</div></div>
+<div class="card" id="teamStatusCard">
+<div class="row"><h3 class="section-title">本週成團狀況</h3><span class="pill wait" id="teamStatusBadge">尚未成團</span></div>
+<div class="big" id="teamStatusCount">0 / 4 人</div>
+<p class="muted" id="teamStatusText">最低成團人數 4 人，可由管理者調整。</p>
+<div class="notice" id="teamReminder" style="display:none;margin-top:10px"></div>
+<div class="field" style="margin-top:12px"><button class="secondary danger" onclick="setWeekStatus('cancelled')">本週手動設定不成團</button><button class="secondary" onclick="setWeekStatus('auto')">恢復自動判斷</button></div>
+<p class="muted">手動設定不成團後，不會因人數增加而自動恢復；需由管理者按「恢復自動判斷」。</p>
+</div>
+<div class="card"><h3 class="section-title">本週繳費概況</h3><div id="homePayments"></div></div>
+<div class="notice">第四版試算：新增個人出席與帳務紀錄、收款修改雙重確認，以及可編輯的本週場地地點、打球時間與公告欄。每人應繳依場地費除以出席人數後無條件進位，多收零頭不列入結餘。注意：目前資料仍只保存在這台裝置的瀏覽器，尚未連接雲端資料庫、多人同步或正式工號登入。</div>
+</section>
+<section id="attendance" class="page">
+<div class="card">
+<div class="row"><div><h3 class="section-title">每週出席登記</h3><div class="muted">點選人頭即可參加，再點一次可取消</div></div><span class="pill ok" id="attCount">0 人參加</span></div>
+<div class="field" style="margin:13px 0"><button class="secondary" onclick="changeWeek(-1)">← 前一週</button><strong id="attDate"></strong><button class="secondary" onclick="changeWeek(1)">下一週 →</button></div>
+<div class="players" id="players"></div>
+</div>
+<div class="card"><div class="row"><strong>本週費用試算</strong><strong id="attShare" class="green">NT$ 0 / 人</strong></div><p class="muted" id="attFeeText">場地費 NT$ 1,200</p><button class="primary" onclick="showPage('payment')">前往繳費管理</button></div>
+</section>
+<section id="payment" class="page">
+<div class="card">
+<div class="row"><div><h3 class="section-title">場地費與繳費</h3><div class="muted" id="payDate"></div></div><span class="pill">管理者操作</span></div>
+<div class="field" style="margin:12px 0"><label for="weekFee">本週場地費 NT$</label><input id="weekFee" type="number" min="0" step="1"><button class="primary" onclick="saveFee()">儲存本週費用</button></div>
+<div class="notice">修改場地費後，系統會立即重新計算本週所有參加者的應繳金額。已登記的付款金額會保留，差額會自動反映在未收款總額。</div>
+</div>
+<div class="card"><h3 class="section-title">本週參加者與付款狀態</h3><div id="paymentList"></div></div>
+</section>
+<section id="accounts" class="page">
+<div class="card">
+<h3 class="section-title">個人出席與帳務紀錄</h3>
+<p class="muted">選擇球員後，可查看參加日期、每週應繳、已繳及尚欠金額。</p>
+<div class="field"><label for="accountMember">選擇球員</label><select id="accountMember" onchange="renderAccount()"></select></div>
+<div id="accountSummary" class="metrics" style="margin-top:12px"></div>
+</div>
+<div class="card"><h3 class="section-title">出席及繳費明細</h3><div id="accountLedger"></div></div>
+</section>
+<section id="history" class="page">
+<div class="card"><h3 class="section-title">歷史場次</h3><div class="field"><button class="secondary" onclick="changeWeek(-1)">← 前一週</button><button class="secondary" onclick="changeWeek(1)">下一週 →</button><span class="muted" id="historyDate"></span></div><p class="muted">選擇不同週次可查看該週出席與帳務。每週資料會保留。</p><div id="historyList"></div></div>
+</section>
+<section id="settings" class="page">
+<div class="card"><h3 class="section-title">基本設定</h3>
+<div class="field" style="margin-bottom:12px"><label>最低成團人數</label><input id="minPlayers" type="number" min="1" step="1" style="width:90px"><button class="primary" onclick="saveMinPlayers()">儲存人數</button></div>
+<div class="field" style="margin-bottom:12px"><label>本週場地地點</label><input id="weekVenue" type="text" placeholder="輸入本週球館名稱或地址"><button class="primary" onclick="saveWeekVenue()">儲存地點</button></div>
+<div class="field" style="margin-bottom:12px"><label>本週打球日期與時間</label><input id="playAt" type="datetime-local"><button class="primary" onclick="savePlayAt()">儲存時間</button></div>
+<div class="field" style="margin-bottom:12px"><label>公告內容</label><textarea id="announcement" rows="3" placeholder="例如：本週改至第二球館，請提早 10 分鐘到場"></textarea><button class="primary" onclick="saveAnnouncement()">發布公告</button></div>
+<p class="muted">系統會在打球前 8 小時內顯示提醒。提醒會顯示在網站首頁，所有看到本網站的人都能查看。</p>
+<div class="field" style="margin-bottom:12px"><label>預設每週場地費 NT$</label><input id="defaultFee" type="number" min="0"><button class="primary" onclick="saveDefault()">儲存預設</button></div>
+<div class="field" style="margin-bottom:12px"><label>固定場地名稱</label><input id="venueName" type="text" placeholder="例如：XX運動中心"><button class="primary" onclick="saveVenue()">儲存</button></div>
+</div>
+<div class="card"><h3 class="section-title">球員名單</h3><p class="muted">可先將示範球員改成真實姓名。</p><div id="memberSettings"></div><div class="field" style="margin-top:12px"><input id="newMemberId" placeholder="輸入工號（例如 A123）"><input id="newMember" placeholder="輸入球員姓名"><button class="primary" onclick="addMember()">新增球員</button></div><p class="muted">每位球員以工號作為帳務識別；示範名單的 DEMO 工號可在正式使用前換成實際工號。</p></div>
+<div class="card"><button class="secondary danger" onclick="resetDemo()">重設示範資料</button><p class="muted">重設會清除這個瀏覽器內的所有試用紀錄。</p></div>
+</section>
+</main><footer>羽球團管理系統・第四版本機試用</footer>
+<script>
+const KEY='badminton_manager_v1';
+const initial={defaultFee:1200,minPlayers:4,venue:'固定場地',members:['球員01','球員02','球員03','球員04','球員05','球員06','球員07','球員08','球員09','球員10','球員11','球員12','球員13','球員14','球員15','球員16','球員17','球員18'],memberIds:{"球員01":"DEMO001","球員02":"DEMO002","球員03":"DEMO003","球員04":"DEMO004","球員05":"DEMO005","球員06":"DEMO006","球員07":"DEMO007","球員08":"DEMO008","球員09":"DEMO009","球員10":"DEMO010","球員11":"DEMO011","球員12":"DEMO012","球員13":"DEMO013","球員14":"DEMO014","球員15":"DEMO015","球員16":"DEMO016","球員17":"DEMO017","球員18":"DEMO018"},sessions:{}};
+let db=load(),weekStart=getSunday(new Date());
+function load(){try{let d={...initial,...JSON.parse(localStorage.getItem(KEY)||'{}')};d.memberIds=d.memberIds||{};d.members.forEach((n,i)=>{if(!d.memberIds[n])d.memberIds[n]='TEMP'+String(i+1).padStart(3,'0')});Object.values(d.sessions||{}).forEach(s=>{s.paid=s.paid||{};d.members.forEach(n=>{let id=d.memberIds[n];if(Object.prototype.hasOwnProperty.call(s.paid,n)&&!Object.prototype.hasOwnProperty.call(s.paid,id)){s.paid[id]=s.paid[n];delete s.paid[n]}})});return d}catch(e){return structuredClone(initial)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function money(n){return 'NT$ '+Math.round(n||0).toLocaleString('zh-TW')}
+function keyDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function getSunday(d){let x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-x.getDay());return x}
+function fmt(d){return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（日）`}
+function session(){let k=keyDate(weekStart);if(!db.sessions[k])db.sessions[k]={date:k,fee:db.defaultFee,attendees:[],paid:{},statusOverride:'auto',playAt:''};let s=db.sessions[k];if(!s.statusOverride)s.statusOverride='auto';if(s.playAt===undefined)s.playAt='';return s}
+function teamStatus(s){if(s.statusOverride==='cancelled')return 'cancelled';if(s.statusOverride==='confirmed')return 'confirmed';return (s.attendees||[]).length>=Math.max(1,Number(db.minPlayers)||4)?'confirmed':'pending'}
+function memberId(name){return db.memberIds?.[name]||name}
+function dueMap(s){let a=s.attendees||[],n=a.length,each=n?Math.ceil((Number(s.fee)||0)/n):0;let o={};a.forEach(name=>o[memberId(name)]=each);return o}
+function allSessions(){return Object.values(db.sessions).sort((a,b)=>a.date.localeCompare(b.date))}
+function total(){let fees=0,paid=0,due=0;allSessions().forEach(s=>{fees+=Number(s.fee)||0;let ds=dueMap(s);Object.entries(ds).forEach(([id,v])=>{let p=Number(s.paid?.[id])||0;paid+=p;due+=Math.max(0,v-p)})});return {fees,paid,due,count:allSessions().length}}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===p));render()}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function changeWeek(n){weekStart.setDate(weekStart.getDate()+n*7);session();save()}
+function toggle(name){let s=session(),a=s.attendees;if(a.includes(name)){s.attendees=a.filter(x=>x!==name)}else{s.attendees.push(name)}save()}
+function render(){
+let s=session(),k=keyDate(weekStart),ds=dueMap(s),t=total(),paidNow=Object.values(s.paid||{}).reduce((a,b)=>a+(Number(b)||0),0);
+document.getElementById('homeDate').textContent=fmt(weekStart);document.getElementById('homeVenue').textContent=s.venue||db.venue;document.getElementById('announcementContent').textContent=[s.venue||db.venue,s.playAt?new Date(s.playAt).toLocaleString('zh-TW',{dateStyle:'medium',timeStyle:'short'}):'',s.announcement||''].filter(Boolean).join('\\n')||'尚無公告';
+document.getElementById('homeFee').textContent=money(s.fee);document.getElementById('homeCount').textContent=s.attendees.length+' 人';document.getElementById('homeShare').textContent=money(s.attendees.length?Math.ceil(s.fee/s.attendees.length):0);document.getElementById('homePaid').textContent=money(paidNow);
+document.getElementById('totalFees').textContent=money(t.fees);document.getElementById('totalPaid').textContent=money(t.paid);document.getElementById('totalDue').textContent=money(t.due);document.getElementById('totalSessions').textContent=t.count+' 週';
+document.getElementById('homePayments').innerHTML=s.attendees.length?s.attendees.map(n=>`<div class="listrow row"><span>${esc(n)}</span><span class="pill ${(Number(s.paid?.[memberId(n)])||0)>=ds[memberId(n)]?'ok':'wait'}">${(Number(s.paid?.[memberId(n)])||0)>=ds[memberId(n)]?'已收款':'待收款'}</span></div>`).join(''):'<p class="muted">本週尚未有人登記參加</p>';
+let status=teamStatus(s),threshold=Math.max(1,Number(db.minPlayers)||4),count=s.attendees.length;
+let badge=document.getElementById('teamStatusBadge'),statusText=document.getElementById('teamStatusText');
+badge.textContent=status==='cancelled'?'管理者已設定不成團':status==='confirmed'?'已成團':'尚未成團';
+badge.className='pill '+(status==='confirmed'?'ok':'wait');
+document.getElementById('teamStatusCount').textContent=count+' / '+threshold+' 人';
+statusText.textContent=status==='cancelled'?'本週已由管理者手動設定為不成團。':status==='confirmed'?'已達最低成團人數。':'還差 '+Math.max(0,threshold-count)+' 人達到成團門檻。';
+let reminder=document.getElementById('teamReminder'),now=Date.now(),playTime=s.playAt?new Date(s.playAt).getTime():NaN;
+let withinEight=Number.isFinite(playTime)&&playTime-now<=8*60*60*1000&&playTime-now>=0;
+if(status==='pending'&&withinEight){reminder.style.display='block';reminder.textContent='提醒：距離打球時間已不到 8 小時，目前仍未成團，請大家留意，並請管理者確認是否需要向場地取消預約。'}
+else if(status==='cancelled'){reminder.style.display='block';reminder.textContent='本週目前設定為不成團。請留意管理者後續公告。'}
+else{reminder.style.display='none';reminder.textContent=''}
+document.getElementById('attDate').textContent=fmt(weekStart);document.getElementById('attCount').textContent=s.attendees.length+' 人參加';document.getElementById('attFeeText').textContent='場地費 '+money(s.fee);document.getElementById('attShare').textContent=money(s.attendees.length?Math.ceil(s.fee/s.attendees.length):0)+' / 人';
+document.getElementById('players').innerHTML=db.members.map((n,i)=>`<button class="player ${s.attendees.includes(n)?'selected':''}" onclick="toggle('${attr(n)}')"><span class="avatar">${['🧑🏻','👨🏻','👩🏻','🧑🏼','👨🏼'][i%5]}</span><strong>${esc(n)}</strong><small>${s.attendees.includes(n)?'✓ 參加中':'點選參加'}</small></button>`).join('');
+document.getElementById('payDate').textContent=fmt(weekStart);document.getElementById('weekFee').value=s.fee;
+document.getElementById('paymentList').innerHTML=s.attendees.length?s.attendees.map(n=>{let id=memberId(n),d=ds[id],p=Number(s.paid?.[id])||0,left=Math.max(0,d-p);return `<div class="listrow"><div class="row"><strong>${esc(n)}</strong><span class="pill ${left===0?'ok':'wait'}">${left===0?'已收清':p>0?'部分收款':'尚未收款'}</span></div><div class="row" style="margin-top:7px"><span class="muted">應繳 ${money(d)}・已收 ${money(p)}</span><span class="field"><input aria-label="${esc(n)}付款金額" id="pay-${safeId(n)}" type="number" min="0" value="${left}" style="width:86px"><button class="secondary" onclick="recordPay('${attr(n)}')">收款</button><button class="secondary" onclick="editPayment('${attr(n)}')">修改已收</button></span></div></div>`}).join(''):'<p class="muted">請先登記本週出席</p>';
+document.getElementById('historyDate').textContent=fmt(weekStart);document.getElementById('historyList').innerHTML=allSessions().map(x=>{let d=dueMap(x),expected=Object.values(d).reduce((a,b)=>a+b,0),p=Object.values(x.paid||{}).reduce((a,b)=>a+(Number(b)||0),0);return `<div class="listrow"><div class="row"><strong>${x.date}</strong><strong>${money(x.fee)}</strong></div><div class="muted">${(x.attendees||[]).length} 人參加・應收 ${money(expected)}・已收 ${money(p)}</div></div>`}).join('')||'<p class="muted">尚無歷史紀錄</p>';
+document.getElementById('accountMember').innerHTML=db.members.map(n=>`<option value="${attr(n)}">${esc(n)}（${esc(memberId(n))}）</option>`).join('');renderAccount();
+document.getElementById('defaultFee').value=db.defaultFee;document.getElementById('minPlayers').value=db.minPlayers||4;document.getElementById('playAt').value=s.playAt||'';document.getElementById('weekVenue').value=s.venue||db.venue;document.getElementById('announcement').value=s.announcement||'';document.getElementById('venueName').value=db.venue;
+document.getElementById('memberSettings').innerHTML=db.members.map((n,i)=>`<div class="listrow row"><span><strong>${esc(n)}</strong><br><small class="muted">工號：${esc(memberId(n))}</small></span><span class="field"><button class="secondary" onclick="renameMember(${i})">改名</button><button class="secondary danger" onclick="removeMember(${i})">移除</button></span></div>`).join('');
+}
+function saveMinPlayers(){let v=Number(document.getElementById('minPlayers').value);if(!Number.isInteger(v)||v<1)return alert('最低成團人數請輸入 1 人以上的整數');db.minPlayers=v;save();alert('最低成團人數已更新，本週成團狀況已重新判斷。')}
+function savePlayAt(){let v=document.getElementById('playAt').value;if(v&&!Number.isFinite(new Date(v).getTime()))return alert('請輸入有效的打球日期與時間');session().playAt=v;save();alert('本週打球時間已更新。')}
+function setWeekStatus(value){session().statusOverride=value;save();alert(value==='cancelled'?'本週已手動設定為不成團。':'已恢復由系統依人數自動判斷。')}
+function saveFee(){let v=Number(document.getElementById('weekFee').value);if(!Number.isFinite(v)||v<0)return alert('請輸入有效場地費');session().fee=Math.round(v);save();alert('本週場地費已更新，應繳金額已重新計算。')}
+function recordPay(n){let el=document.getElementById('pay-'+safeId(n)),v=Number(el.value);if(!Number.isFinite(v)||v<0)return alert('請輸入有效收款金額');let s=session();let id=memberId(n);s.paid[id]=(Number(s.paid[id])||0)+v;save()}
+
+function saveWeekVenue(){let v=document.getElementById('weekVenue').value.trim();if(!v)return alert('請輸入本週場地地點');session().venue=v;save();alert('本週場地地點已更新。')}
+function saveAnnouncement(){session().announcement=document.getElementById('announcement').value.trim();save();alert('公告已更新。')}
+function editPayment(n){
+ let s=session(),id=memberId(n),old=Number(s.paid?.[id])||0;
+ let raw=prompt('修改 '+n+'（工號 '+id+'）本週累計已收金額。\\n目前已收：'+money(old)+'\\n請輸入修改後的正確累計金額：',String(old));
+ if(raw===null)return;
+ if(raw.trim()===''||!Number.isFinite(Number(raw))||Number(raw)<0)return alert('請輸入 0 或正確的金額');
+ let next=Math.round(Number(raw));
+ if(!confirm('請再次確認修改收款紀錄：\\n球員：'+n+'（'+id+'）\\n原已收：'+money(old)+'\\n修改為：'+money(next)+'\\n\\n確定要儲存這項修改嗎？'))return;
+ s.paid[id]=next;save();alert('收款紀錄已修改。');
+}
+function renderAccount(){
+ let sel=document.getElementById('accountMember');if(!sel)return;
+ let n=sel.value||db.members[0];
+ if(!n){document.getElementById('accountSummary').innerHTML='';document.getElementById('accountLedger').innerHTML='<p class="muted">尚無球員資料</p>';return;}
+ let id=memberId(n);
+ let rows=allSessions().filter(x=>(x.attendees||[]).includes(n)).map(x=>{
+   let due=dueMap(x)[id]||0,paid=Number(x.paid?.[id])||0;
+   return {date:x.date,due,paid,remaining:Math.max(0,due-paid)};
+ });
+ let dueTotal=rows.reduce((a,x)=>a+x.due,0),paidTotal=rows.reduce((a,x)=>a+x.paid,0),remainTotal=rows.reduce((a,x)=>a+x.remaining,0);
+ document.getElementById('accountSummary').innerHTML=
+ `<div class="metric"><div class="muted">參加次數</div><div class="big">${rows.length} 次</div></div><div class="metric"><div class="muted">累計應繳</div><div class="big">${money(dueTotal)}</div></div><div class="metric"><div class="muted">累計已繳</div><div class="big green">${money(paidTotal)}</div></div><div class="metric"><div class="muted">目前尚欠</div><div class="big">${money(remainTotal)}</div></div>`;
+ document.getElementById('accountLedger').innerHTML=rows.length?rows.slice().reverse().map(x=>
+ `<div class="listrow"><div class="row"><strong>${x.date}</strong><span class="pill ${x.remaining===0?'ok':'wait'}">${x.remaining===0?'已繳清':x.paid>0?'部分繳費':'尚未繳費'}</span></div><div class="muted" style="margin-top:6px">應繳 ${money(x.due)}　・　已繳 ${money(x.paid)}　・　尚欠 ${money(x.remaining)}</div></div>`
+ ).join(''):'<p class="muted">目前沒有出席紀錄</p>';
+}
+
+function saveDefault(){let v=Number(document.getElementById('defaultFee').value);if(!Number.isFinite(v)||v<0)return alert('請輸入有效金額');db.defaultFee=Math.round(v);save();alert('預設場地費已更新；只影響之後新建立的週次。')}
+function saveVenue(){db.venue=document.getElementById('venueName').value.trim()||'固定場地';save()}
+function addMember(){let id=document.getElementById('newMemberId').value.trim(),n=document.getElementById('newMember').value.trim();if(!id||!n)return alert('請輸入工號與球員姓名');if(db.members.includes(n))return alert('名單已有這位球員');if(Object.values(db.memberIds||{}).includes(id))return alert('這個工號已經存在');db.members.push(n);db.memberIds=db.memberIds||{};db.memberIds[n]=id;document.getElementById('newMember').value='';document.getElementById('newMemberId').value='';save()}
+function renameMember(i){let old=db.members[i],n=prompt('請輸入新姓名',old);if(!n||!n.trim())return;n=n.trim();if(db.members.includes(n))return alert('名單已有這位球員');let id=memberId(old);db.members[i]=n;db.memberIds[n]=id;delete db.memberIds[old];Object.values(db.sessions).forEach(s=>{if(s.attendees.includes(old))s.attendees=s.attendees.map(x=>x===old?n:x)});save()}
+function removeMember(i){let n=db.members[i];if(!confirm('確定從固定名單移除 '+n+'？過去場次紀錄會保留。'))return;db.members.splice(i,1);save()}
+function resetDemo(){if(!confirm('確定清除所有試用資料並恢復示範名單？'))return;db=structuredClone(initial);weekStart=getSunday(new Date());save()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function attr(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function safeId(s){return btoa(unescape(encodeURIComponent(s))).replace(/[^a-zA-Z0-9]/g,'')}
+session();render();
+</script>
+</body></html>
